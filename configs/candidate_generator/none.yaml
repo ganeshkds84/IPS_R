@@ -1,0 +1,3 @@
+# Disabled candidate_generator. Add configs/candidate_generator/<impl>.yaml selecting a registered implementation.
+name: null
+params: {}

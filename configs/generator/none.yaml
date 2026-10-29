@@ -1,0 +1,3 @@
+# Disabled generator. Add configs/generator/<impl>.yaml selecting a registered implementation.
+name: null
+params: {}

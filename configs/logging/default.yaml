@@ -1,0 +1,3 @@
+level: ${oc.env:IPS_R_LOG_LEVEL,INFO}     # DEBUG | INFO | WARNING | ERROR | CRITICAL
+format: ${oc.env:IPS_R_LOG_FORMAT,console} # console | json
+to_file: true                              # write <run_dir>/run.log as JSON lines

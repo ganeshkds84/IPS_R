@@ -1,0 +1,7 @@
+# Filesystem layout. Each directory can be redirected with an IPS_R_* variable.
+root: ${ips_r.root:}
+data: ${oc.env:IPS_R_DATA_DIR,'${paths.root}/data'}
+cache: ${oc.env:IPS_R_CACHE_DIR,'${paths.root}/cache'}
+models: ${oc.env:IPS_R_MODELS_DIR,'${paths.root}/models'}
+outputs: ${oc.env:IPS_R_OUTPUT_DIR,'${paths.root}/outputs'}
+experiments: ${paths.root}/experiments

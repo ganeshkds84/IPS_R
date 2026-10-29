@@ -1,0 +1,3 @@
+# Disabled dataset. Add configs/dataset/<impl>.yaml selecting a registered implementation.
+name: null
+params: {}

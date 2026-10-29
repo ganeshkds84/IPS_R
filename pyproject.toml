@@ -1,0 +1,131 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ips-r"
+version = "0.1.0"
+description = "IPS-R research codebase: reproducible infrastructure and component interfaces."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "IPS-R Authors" }]
+keywords = ["research", "retrieval", "reranking", "generation", "hydra"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+dependencies = [
+    "hydra-core>=1.3.2,<1.4",
+    "omegaconf>=2.3,<2.4",
+    "structlog>=24.4",
+    "python-dotenv>=1.0.1",
+    "typer>=0.12.5",
+    "rich>=13.7",
+    "numpy>=1.26",
+]
+
+[project.scripts]
+ips-r = "ips_r.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "ruff>=0.8",
+    "black>=24.10",
+    "mypy>=1.13",
+    "pre-commit>=4.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ips_r"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/ips_r", "configs", "README.md", "LICENSE"]
+
+# --------------------------------------------------------------------------- #
+# Formatting & linting
+# --------------------------------------------------------------------------- #
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+extend-exclude = ["outputs", "cache", "models", "data", "notebooks"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "SIM", # simplify
+    "C4",  # comprehensions
+    "PTH", # prefer pathlib
+    "RUF", # ruff-specific
+    "D",   # pydocstyle
+    "PL",  # pylint
+]
+ignore = [
+    "E501",    # line length handled by black
+    "D105",    # magic-method docstrings
+    "D107",    # __init__ docstrings (documented on the class)
+    "PLR0913", # research configs legitimately take many arguments
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["ips_r"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D101", "D102", "D103", "PLR2004", "PLC0415"]
+
+# --------------------------------------------------------------------------- #
+# Type checking
+# --------------------------------------------------------------------------- #
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+files = ["src", "tests", "scripts"]
+show_error_codes = true
+pretty = true
+
+# --------------------------------------------------------------------------- #
+# Testing
+# --------------------------------------------------------------------------- #
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
+markers = ["slow: long-running tests (deselect with '-m \"not slow\"')"]
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["ips_r"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 85
+exclude_also = [
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "@(abc\\.)?abstractmethod",
+]

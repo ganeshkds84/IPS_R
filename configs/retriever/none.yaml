@@ -1,0 +1,3 @@
+# Disabled retriever. Add configs/retriever/<impl>.yaml selecting a registered implementation.
+name: null
+params: {}

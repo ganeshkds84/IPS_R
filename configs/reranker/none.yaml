@@ -1,0 +1,3 @@
+# Disabled reranker. Add configs/reranker/<impl>.yaml selecting a registered implementation.
+name: null
+params: {}

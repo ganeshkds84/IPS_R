@@ -1,0 +1,28 @@
+# Primary Hydra config. Compose with:  ips-r config [overrides...]
+#
+# Component groups default to `none` (disabled). Research sprints add files such as
+# configs/retriever/<impl>.yaml and select them with `retriever=<impl>`.
+defaults:
+  - base_config            # structured schema (ips_r.config.schema.AppConfig)
+  - paths: default
+  - logging: default
+  - seed: default
+  - dataset: none
+  - retriever: none
+  - candidate_generator: none
+  - decision_policy: none
+  - reranker: none
+  - generator: none
+  - evaluator: none
+  - pipeline: none
+  - _self_
+  - experiment: null       # optional preset, e.g. `experiment=example`
+
+experiment:
+  name: default
+  description: ""
+  tags: []
+
+run:
+  output_dir: null         # null -> ${paths.outputs}/<experiment.name>/<run_id>
+  dry_run: false

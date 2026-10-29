@@ -1,0 +1,48 @@
+# --- Python ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# --- Tooling caches -------------------------------------------------------
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# --- Secrets --------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# --- Research artefacts (keep directory skeleton only) --------------------
+data/**
+!data/**/
+!data/**/.gitkeep
+!data/README.md
+cache/*
+!cache/.gitkeep
+models/*
+!models/.gitkeep
+!models/README.md
+outputs/*
+!outputs/.gitkeep
+multirun/
+
+# --- Notebooks ------------------------------------------------------------
+.ipynb_checkpoints/
+
+# --- Editors / OS ---------------------------------------------------------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+.DS_Store
+Thumbs.db

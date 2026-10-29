@@ -1,0 +1,24 @@
+# Convenience wrapper around the image with persistent, host-mounted working directories.
+#   docker compose run --rm ips-r run --dry-run experiment=example
+services:
+  ips-r:
+    build:
+      context: .
+    image: ips-r:latest
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./data:/app/data
+      - ./cache:/app/cache
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+    # Uncomment to expose NVIDIA GPUs (requires the NVIDIA Container Toolkit).
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]

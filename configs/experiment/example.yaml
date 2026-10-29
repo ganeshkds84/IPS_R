@@ -1,0 +1,10 @@
+# @package _global_
+# Example experiment preset. Select with:  ips-r run experiment=example
+# Presets may override any part of the config, including component selections.
+experiment:
+  name: example
+  description: Infrastructure smoke test with all components disabled.
+  tags: [example, sprint-1]
+
+seed:
+  value: 1234

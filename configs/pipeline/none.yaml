@@ -1,0 +1,3 @@
+# Disabled pipeline. Add configs/pipeline/<impl>.yaml selecting a registered implementation.
+name: null
+params: {}
