@@ -1,0 +1,10 @@
+# Sentence chunking: group consecutive sentences (rule-based, abbreviation-aware splitter).
+#   ips-r prepare dataset=hotpotqa chunker=sentence chunker.params.sentences_per_chunk=3
+name: sentence
+params:
+  sentences_per_chunk: 5    # max sentences per chunk
+  sentence_overlap: 1       # sentences shared by consecutive chunks (< sentences_per_chunk)
+  max_chunk_chars: null     # optional length cap that starts a new chunk early
+  abbreviations: ["e.g.", "i.e.", "et al.", "etc.", "vs.", "cf.", "fig.", "figs.", "eq.", "eqs.",
+                  "sec.", "no.", "vol.", "pp.", "dr.", "mr.", "mrs.", "ms.", "prof.", "inc.", "st."]
+  min_chunk_chars: 1

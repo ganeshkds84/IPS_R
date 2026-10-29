@@ -5,6 +5,7 @@ Examples::
     ips-r info
     ips-r config seed.value=7 experiment=example
     ips-r run --dry-run
+    ips-r prepare dataset=squad chunker=recursive_character
     ips-r --env-file .env.local run logging.level=DEBUG
 """
 
@@ -25,7 +26,7 @@ from ips_r.core.env import load_env_file, load_settings
 from ips_r.core.exceptions import IPSRError
 from ips_r.core.log import configure_logging, get_logger
 from ips_r.core.paths import find_config_dir, find_project_root
-from ips_r.experiment.runner import execute_run, run_context
+from ips_r.experiment.runner import execute_preparation, execute_run, run_context
 from ips_r.pipeline.builder import COMPONENT_REGISTRIES
 
 logger = get_logger(__name__)
@@ -133,6 +134,36 @@ def run(
         typer.echo(f"run {ctx.run_id} [{summary['status']}] -> {ctx.output_dir}")
     except IPSRError as exc:
         _fail(exc)
+
+
+@app.command()
+def prepare(overrides: OverridesArg = None) -> None:
+    """Ingest, validate, chunk and profile the configured dataset in a tracked run."""
+    try:
+        cfg = load_config(overrides or [])
+        with run_context(cfg) as ctx:
+            summary = execute_preparation(ctx)
+    except IPSRError as exc:
+        _fail(exc)
+    table = Table(title=f"Prepared dataset: {summary['dataset']}", show_header=False)
+    table.add_column("key", style="bold")
+    table.add_column("value")
+    validation = summary["validation"]
+    for key, value in (
+        ("documents", summary["num_documents"]),
+        ("questions", summary["num_questions"]),
+        ("chunks", summary["num_chunks"]),
+        ("pages", summary["num_pages"]),
+        (
+            "dropped",
+            f"{summary['dropped_documents']} documents, {summary['dropped_questions']} questions",
+        ),
+        ("validation", f"{validation['errors']} errors, {validation['warnings']} warnings"),
+        ("output", summary["output_dir"]),
+    ):
+        table.add_row(key, str(value))
+    console.print(table)
+    typer.echo(f"run {ctx.run_id} [{summary['status']}] -> {ctx.output_dir}")
 
 
 def main() -> None:

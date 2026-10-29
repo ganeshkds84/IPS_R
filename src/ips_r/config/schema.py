@@ -18,6 +18,7 @@ logger = get_logger(__name__)
 
 COMPONENT_KEYS: tuple[str, ...] = (
     "dataset",
+    "chunker",
     "retriever",
     "candidate_generator",
     "decision_policy",
@@ -88,6 +89,51 @@ class ComponentConfig:
 
 
 @dataclass
+class ValidationConfig:
+    """Rules applied by :class:`ips_r.data.validation.DatasetValidator`."""
+
+    check_encoding: bool = True
+    check_metadata: bool = True
+    min_year: int = 1500
+    max_year: int = 2100
+    max_issues_per_code: int = 100
+
+
+@dataclass
+class StatisticsConfig:
+    """Options of :class:`ips_r.data.statistics.StatisticsAccumulator`."""
+
+    word_pattern: str = r"\w+"
+    lowercase: bool = True
+    top_k_terms: int = 25
+
+
+@dataclass
+class PreparationConfig:
+    """Behaviour of :func:`ips_r.data.preparation.prepare_dataset` (``ips-r prepare``).
+
+    Attributes:
+        output_subdir: Directory inside the run directory receiving the artefacts.
+        drop_invalid: Exclude records with error-severity issues from the outputs.
+        fail_on_error: Fail the run (after writing reports) if validation finds errors.
+        write_documents: Write ``documents.jsonl``.
+        write_questions: Write ``questions.jsonl``.
+        write_chunks: Write ``chunks.jsonl`` (requires a chunker).
+        validation: Validation rules.
+        statistics: Statistics options.
+    """
+
+    output_subdir: str = "dataset"
+    drop_invalid: bool = True
+    fail_on_error: bool = False
+    write_documents: bool = True
+    write_questions: bool = True
+    write_chunks: bool = True
+    validation: ValidationConfig = field(default_factory=ValidationConfig)
+    statistics: StatisticsConfig = field(default_factory=StatisticsConfig)
+
+
+@dataclass
 class AppConfig:
     """Root configuration schema."""
 
@@ -96,7 +142,9 @@ class AppConfig:
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     seed: SeedConfig = field(default_factory=SeedConfig)
     run: RunConfig = field(default_factory=RunConfig)
+    preparation: PreparationConfig = field(default_factory=PreparationConfig)
     dataset: ComponentConfig = field(default_factory=ComponentConfig)
+    chunker: ComponentConfig = field(default_factory=ComponentConfig)
     retriever: ComponentConfig = field(default_factory=ComponentConfig)
     candidate_generator: ComponentConfig = field(default_factory=ComponentConfig)
     decision_policy: ComponentConfig = field(default_factory=ComponentConfig)

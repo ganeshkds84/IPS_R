@@ -46,3 +46,15 @@ class ComponentError(IPSRError):
 
 class ComponentNotReadyError(ComponentError):
     """Raised when a component is used in a state that does not permit the operation."""
+
+
+class DataError(IPSRError):
+    """Raised when dataset content cannot be read, parsed or accepted."""
+
+
+class DataValidationError(DataError):
+    """Raised when a dataset fails validation and the caller asked to stop on errors."""
+
+
+class PDFParseError(DataError):
+    """Raised when a PDF file is corrupted, encrypted or otherwise unparseable."""

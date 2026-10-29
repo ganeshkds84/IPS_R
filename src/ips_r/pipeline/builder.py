@@ -13,6 +13,7 @@ from ips_r.core.exceptions import ConfigurationError, PipelineError, RegistryErr
 from ips_r.core.log import get_logger
 from ips_r.core.registry import Registry
 from ips_r.data.base import DATASETS
+from ips_r.data.chunking.base import CHUNKERS
 from ips_r.evaluation.base import EVALUATORS
 from ips_r.generation.base import GENERATORS
 from ips_r.pipeline.base import PIPELINES, AbstractPipeline
@@ -25,6 +26,7 @@ logger = get_logger(__name__)
 
 COMPONENT_REGISTRIES: Final[Mapping[str, Registry[Any]]] = {
     "dataset": DATASETS,
+    "chunker": CHUNKERS,
     "retriever": RETRIEVERS,
     "candidate_generator": CANDIDATE_GENERATORS,
     "decision_policy": DECISION_POLICIES,

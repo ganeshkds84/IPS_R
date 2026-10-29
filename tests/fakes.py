@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 from ips_r.candidates import AbstractCandidateGenerator
@@ -17,6 +17,7 @@ from ips_r.core.types import (
     ScoredDocument,
 )
 from ips_r.data import AbstractDataset
+from ips_r.data import models as data_models
 from ips_r.evaluation import AbstractEvaluator
 from ips_r.generation import AbstractGenerator
 from ips_r.pipeline import AbstractPipeline
@@ -29,14 +30,12 @@ QUERY = Query(id="q1", text="find document")
 
 
 class FakeDataset(AbstractDataset):
-    def _load_queries(self) -> list[Query]:
-        return [QUERY]
+    def _iter_documents(self) -> Iterator[data_models.Document]:
+        for doc in DOCS:
+            yield data_models.Document(id=doc.id, text=doc.text)
 
-    def _load_documents(self) -> list[Document]:
-        return list(DOCS)
-
-    def _load_references(self) -> list[Reference]:
-        return [Reference(query_id=QUERY.id, answers=("document 0",))]
+    def _iter_questions(self) -> Iterator[data_models.Question]:
+        yield data_models.Question(id=QUERY.id, text=QUERY.text, answers=("document 0",))
 
 
 class FakeRetriever(AbstractRetriever):

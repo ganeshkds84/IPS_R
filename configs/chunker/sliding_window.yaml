@@ -1,0 +1,8 @@
+# Sliding window: fixed-width character windows advanced by a constant stride.
+#   ips-r prepare dataset=academic_pdf chunker=sliding_window chunker.params.stride=250
+name: sliding_window
+params:
+  window_size: 1000         # characters per window
+  stride: 500               # characters between window starts (<= window_size)
+  respect_word_boundaries: true
+  min_chunk_chars: 1

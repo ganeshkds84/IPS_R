@@ -1,0 +1,20 @@
+# Behaviour of `ips-r prepare` (ips_r.data.preparation.prepare_dataset).
+#   ips-r prepare dataset=squad preparation.fail_on_error=true
+output_subdir: dataset      # artefacts go to <run_dir>/<output_subdir>/
+drop_invalid: true          # exclude records with error-severity issues from the outputs
+fail_on_error: false        # fail the run (after writing reports) if validation finds errors
+write_documents: true
+write_questions: true
+write_chunks: true
+
+validation:
+  check_encoding: true      # flag U+FFFD, surrogates, control characters, mojibake
+  check_metadata: true      # flag implausible years, malformed DOIs / language codes / URLs
+  min_year: 1500
+  max_year: 2100
+  max_issues_per_code: 100  # examples stored per issue code (all issues are counted)
+
+statistics:
+  word_pattern: '\w+'       # tokens counted for vocabulary statistics
+  lowercase: true
+  top_k_terms: 25

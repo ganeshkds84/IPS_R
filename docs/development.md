@@ -8,7 +8,7 @@
 | Ruff | Linting (pycodestyle, pyflakes, isort, bugbear, pydocstyle/Google, pylint, …) | `[tool.ruff]` |
 | Black | Formatting (line length 100) | `[tool.black]` |
 | Mypy | `--strict` type checking of `src/`, `tests/`, `scripts/` | `[tool.mypy]` |
-| pytest | Tests; warnings are errors; coverage gate ≥ 85 % | `[tool.pytest.ini_options]`, `[tool.coverage.*]` |
+| pytest | Tests; warnings are errors; coverage gate ≥ 95 % | `[tool.pytest.ini_options]`, `[tool.coverage.*]` |
 | pre-commit | Runs hygiene hooks, Ruff, Black and Mypy on commit | `.pre-commit-config.yaml` |
 
 ## Daily loop
@@ -28,7 +28,9 @@ uv add --group dev <package> # development only
 
 ## Code standards
 
-Every module must have:
+[AGENTS.md](../AGENTS.md) holds the binding engineering rules: architecture,
+naming, logging, Hydra, reproducibility, errors, testing and dependencies.
+In summary, every module must have:
 
 - a module docstring, plus Google-style docstrings on public classes and functions (enforced by Ruff `D`)
 - full type hints (enforced by mypy `--strict`)
@@ -40,6 +42,18 @@ Every module must have:
 - `tests/unit/`: isolated tests of each module
 - `tests/integration/`: config → components → run directory, and the CLI
 - `tests/fakes.py`: minimal in-memory implementations of every interface
+- `tests/data_factories.py`: builds hermetic dataset fixtures in `tmp_path` for every
+  source format: SQuAD, HotpotQA, NQ (gzip and original layout), MS MARCO TSV, and
+  PDFs generated with reportlab (paper, two-column, blank, corrupted). Each fixture
+  deliberately mixes valid and broken records, so tests exercise issue reporting as
+  well as the happy path. Binary fixtures are never committed.
+
+Runtime dependencies added in Milestone 1:
+- `pdfplumber` (MIT): PDF text, font and table extraction.
+
+Dev-only dependencies added in Milestone 1:
+- `reportlab` (BSD): builds PDF test fixtures.
+- `types-reportlab`: type stubs for reportlab.
 - The autouse fixture in `tests/conftest.py` strips `IPS_R_*` variables and resets logging between tests.
 
 ## Continuous integration

@@ -1,0 +1,13 @@
+# MS MARCO passage ranking (TSV, optionally gzipped). One document per passage.
+#   ips-r prepare dataset=ms_marco dataset.params.max_documents=100000
+name: ms_marco
+params:
+  collection_path: ${paths.data}/raw/ms_marco/collection.tsv
+  queries_path: ${paths.data}/raw/ms_marco/queries.dev.small.tsv   # null = no questions
+  qrels_path: ${paths.data}/raw/ms_marco/qrels.dev.small.tsv       # null = no relevance labels
+  only_judged_queries: true # skip queries without relevant passages (needs qrels)
+  split: dev.small
+  version: v1
+  max_documents: null
+  max_questions: null
+  strict: false

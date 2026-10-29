@@ -1,0 +1,3 @@
+# Disabled chunker. Select a strategy with chunker=<recursive_character|sentence|token|sliding_window>.
+name: null
+params: {}

@@ -8,6 +8,7 @@ from ips_r.candidates.base import AbstractCandidateGenerator
 from ips_r.components.base import AbstractComponent
 from ips_r.core.log import get_logger
 from ips_r.data.base import AbstractDataset
+from ips_r.data.chunking.base import AbstractChunker
 from ips_r.evaluation.base import AbstractEvaluator
 from ips_r.generation.base import AbstractGenerator
 from ips_r.policy.base import AbstractDecisionPolicy
@@ -22,6 +23,7 @@ class PipelineComponents:
     """The component instances selected by configuration; ``None`` means disabled."""
 
     dataset: AbstractDataset | None = None
+    chunker: AbstractChunker | None = None
     retriever: AbstractRetriever | None = None
     candidate_generator: AbstractCandidateGenerator | None = None
     decision_policy: AbstractDecisionPolicy | None = None

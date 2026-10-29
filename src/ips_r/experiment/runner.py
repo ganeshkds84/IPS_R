@@ -6,7 +6,8 @@ Layout of a run directory::
         config.yaml     # fully resolved configuration
         metadata.json   # environment, git commit, seed, status, timing
         run.log         # JSON-lines log (if logging.to_file)
-        results.json    # pipeline summary (if a pipeline ran)
+        results.json    # pipeline / preparation summary
+        dataset/        # prepared dataset artefacts (``ips-r prepare``)
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ import subprocess
 import sys
 import uuid
 from collections.abc import Iterator, Mapping
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -27,7 +28,7 @@ from typing import Any
 from omegaconf import DictConfig
 
 from ips_r import __version__
-from ips_r.config.loader import save_config
+from ips_r.config.loader import as_app_config, save_config
 from ips_r.core.exceptions import ConfigurationError, IPSRError
 from ips_r.core.log import (
     bind_context,
@@ -38,7 +39,8 @@ from ips_r.core.log import (
 )
 from ips_r.core.paths import ProjectPaths
 from ips_r.core.seed import SeedState, seed_everything
-from ips_r.pipeline.builder import build_pipeline, build_pipeline_components
+from ips_r.data import CHUNKERS, DATASETS, prepare_dataset
+from ips_r.pipeline.builder import build_component, build_pipeline, build_pipeline_components
 
 logger = get_logger(__name__)
 
@@ -270,3 +272,32 @@ def execute_run(ctx: RunContext, *, dry_run: bool = False) -> dict[str, Any]:
         results = pipeline.run()
     _write_json(ctx.output_dir / "results.json", results)
     return {"status": "completed", "components": configured, "results": results}
+
+
+def execute_preparation(ctx: RunContext) -> dict[str, Any]:
+    """Prepare the configured dataset (and chunks) into ``<run_dir>/<preparation.output_subdir>``.
+
+    Builds the ``dataset`` and optional ``chunker`` components from the run config and
+    runs :func:`ips_r.data.preparation.prepare_dataset`. The summary is also written to
+    ``results.json``.
+
+    Returns:
+        The preparation summary.
+
+    Raises:
+        ConfigurationError: If no dataset is configured or a selection is invalid.
+        PipelineError: If a component cannot be constructed.
+        DataValidationError: If validation fails and ``preparation.fail_on_error`` is set.
+        ComponentError: If the dataset or chunker fails.
+    """
+    settings = as_app_config(ctx.config).preparation
+    dataset = build_component(DATASETS, ctx.config.get("dataset"))
+    if dataset is None:
+        raise ConfigurationError("Dataset preparation requires a dataset, e.g. dataset=squad")
+    chunker = build_component(CHUNKERS, ctx.config.get("chunker"))
+    output_dir = ctx.output_dir / safe_name(settings.output_subdir)
+    with dataset, chunker if chunker is not None else nullcontext():
+        result = prepare_dataset(dataset, output_dir, chunker=chunker, settings=settings)
+    summary = {"status": "completed", **result.summary()}
+    _write_json(ctx.output_dir / "results.json", summary)
+    return summary

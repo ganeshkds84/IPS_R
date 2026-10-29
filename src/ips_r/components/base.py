@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import abc
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from types import MappingProxyType, TracebackType
 from typing import Any, ClassVar, Self
 
@@ -83,6 +83,101 @@ class AbstractComponent(abc.ABC):  # noqa: B024 - lifecycle hooks are optional b
                 f"{self.component_type} '{self._name}' requires config parameter '{key}'"
             )
         return default
+
+    def _param_error(self, key: str, expected: str, value: Any) -> ConfigurationError:
+        """Build the error raised when parameter ``key`` has an invalid value."""
+        return ConfigurationError(
+            f"{self.component_type} '{self._name}' parameter '{key}' must be {expected}, "
+            f"got {value!r}"
+        )
+
+    def int_param(self, key: str, default: Any = _MISSING, *, minimum: int | None = None) -> int:
+        """Return parameter ``key`` as an integer, optionally bounded below.
+
+        Raises:
+            ConfigurationError: If the value is missing, not an integer or below ``minimum``.
+        """
+        value = self.param(key, default)
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise self._param_error(key, "an integer", value)
+        if minimum is not None and value < minimum:
+            raise self._param_error(key, f">= {minimum}", value)
+        return value
+
+    def optional_int_param(self, key: str, *, minimum: int | None = None) -> int | None:
+        """Return parameter ``key`` as an integer, or ``None`` when unset or null.
+
+        Raises:
+            ConfigurationError: If the value is set but invalid.
+        """
+        if self.param(key, None) is None:
+            return None
+        return self.int_param(key, minimum=minimum)
+
+    def float_param(
+        self,
+        key: str,
+        default: Any = _MISSING,
+        *,
+        minimum: float | None = None,
+        maximum: float | None = None,
+    ) -> float:
+        """Return parameter ``key`` as a float within ``[minimum, maximum]``.
+
+        Raises:
+            ConfigurationError: If the value is missing, not numeric or out of range.
+        """
+        value = self.param(key, default)
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            raise self._param_error(key, "a number", value)
+        if (minimum is not None and value < minimum) or (maximum is not None and value > maximum):
+            raise self._param_error(key, f"in [{minimum}, {maximum}]", value)
+        return float(value)
+
+    def bool_param(self, key: str, default: Any = _MISSING) -> bool:
+        """Return parameter ``key`` as a boolean.
+
+        Raises:
+            ConfigurationError: If the value is missing or not a boolean.
+        """
+        value = self.param(key, default)
+        if not isinstance(value, bool):
+            raise self._param_error(key, "a boolean", value)
+        return value
+
+    def str_param(self, key: str, default: Any = _MISSING) -> str:
+        """Return parameter ``key`` as a non-empty string.
+
+        Raises:
+            ConfigurationError: If the value is missing, not a string or empty.
+        """
+        value = self.param(key, default)
+        if not isinstance(value, str) or not value:
+            raise self._param_error(key, "a non-empty string", value)
+        return value
+
+    def optional_str_param(self, key: str) -> str | None:
+        """Return parameter ``key`` as a string, or ``None`` when unset or null.
+
+        Raises:
+            ConfigurationError: If the value is set but not a non-empty string.
+        """
+        if self.param(key, None) is None:
+            return None
+        return self.str_param(key)
+
+    def str_list_param(self, key: str, default: Any = _MISSING) -> tuple[str, ...]:
+        """Return parameter ``key`` as a tuple of strings.
+
+        Raises:
+            ConfigurationError: If the value is missing or not a sequence of strings.
+        """
+        value = self.param(key, default)
+        if isinstance(value, str) or not isinstance(value, Sequence):
+            raise self._param_error(key, "a list of strings", value)
+        if not all(isinstance(item, str) for item in value):
+            raise self._param_error(key, "a list of strings", value)
+        return tuple(value)
 
     # ------------------------------------------------------------------ #
     # Lifecycle
@@ -168,6 +263,36 @@ class AbstractComponent(abc.ABC):  # noqa: B024 - lifecycle hooks are optional b
             elapsed_ms=round((time.perf_counter() - started) * 1000, 3),
         )
         return result
+
+    def _guarded_iter[R](
+        self, operation: str, factory: Callable[[], Iterable[R]], *, limit: int | None = None
+    ) -> Iterator[R]:
+        """Lazily iterate ``factory()`` with lazy setup and error wrapping on every step.
+
+        Args:
+            operation: Operation name used in logs and errors.
+            factory: Returns the iterable to consume (e.g. an implementation generator).
+            limit: Stop after this many items (``None`` = unlimited).
+
+        Raises:
+            ComponentError: If creating or advancing the iterator fails unexpectedly.
+        """
+        if not self._ready:
+            self.setup()
+        iterator = self._guarded(operation, lambda: iter(factory()))
+        count = 0
+        try:
+            while limit is None or count < limit:
+                item = self._guarded(operation, lambda: next(iterator, _MISSING))
+                if item is _MISSING:
+                    break
+                count += 1
+                yield item
+        finally:
+            close = getattr(iterator, "close", None)
+            if callable(close):
+                close()
+            self._logger.debug("component.iteration.end", operation=operation, count=count)
 
     def _require_positive(self, field: str, value: int) -> None:
         """Validate that an integer argument is strictly positive.

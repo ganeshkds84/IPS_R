@@ -1,13 +1,15 @@
 # Primary Hydra config. Compose with:  ips-r config [overrides...]
 #
-# Component groups default to `none` (disabled). Research sprints add files such as
-# configs/retriever/<impl>.yaml and select them with `retriever=<impl>`.
+# Component groups default to `none` (disabled). Select an implementation with
+# `<group>=<impl>`, e.g. `dataset=squad chunker=recursive_character`.
 defaults:
   - base_config            # structured schema (ips_r.config.schema.AppConfig)
   - paths: default
   - logging: default
   - seed: default
+  - preparation: default
   - dataset: none
+  - chunker: none
   - retriever: none
   - candidate_generator: none
   - decision_policy: none

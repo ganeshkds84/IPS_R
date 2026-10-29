@@ -1,0 +1,8 @@
+# Recursive character splitting: split on separators in order, merge pieces up to chunk_size.
+#   ips-r prepare dataset=squad chunker=recursive_character chunker.params.chunk_size=512
+name: recursive_character
+params:
+  chunk_size: 1000          # max characters per chunk
+  chunk_overlap: 200        # max characters shared by consecutive chunks (< chunk_size)
+  separators: ["\n\n", "\n", ". ", " ", ""]   # "" = hard cut as a last resort
+  min_chunk_chars: 1        # drop chunks shorter than this

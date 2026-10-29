@@ -1,0 +1,10 @@
+# SQuAD v1.1 / v2.0 (JSON). One document per paragraph.
+#   ips-r prepare dataset=squad dataset.params.path=/data/squad/dev-v2.0.json
+name: squad
+params:
+  path: ${paths.data}/raw/squad/dev-v2.0.json
+  split: dev
+  version: "2.0"
+  max_documents: null       # limit for quick experiments (null = all)
+  max_questions: null
+  strict: false             # true = abort on the first malformed record

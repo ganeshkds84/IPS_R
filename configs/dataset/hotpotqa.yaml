@@ -1,0 +1,10 @@
+# HotpotQA (distractor / fullwiki JSON). One document per distinct Wikipedia paragraph.
+#   ips-r prepare dataset=hotpotqa dataset.params.max_questions=1000
+name: hotpotqa
+params:
+  path: ${paths.data}/raw/hotpotqa/hotpot_dev_distractor_v1.json
+  split: dev
+  version: distractor-v1
+  max_documents: null
+  max_questions: null
+  strict: false

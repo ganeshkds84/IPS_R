@@ -1,0 +1,8 @@
+# Token chunking: fixed windows of regex tokens (no model vocabulary, no embeddings).
+#   ips-r prepare dataset=ms_marco chunker=token chunker.params.chunk_size=128
+name: token
+params:
+  chunk_size: 256           # tokens per chunk
+  chunk_overlap: 32         # tokens shared by consecutive chunks (< chunk_size)
+  token_pattern: '\w+|[^\w\s]'   # one token = a word or a single punctuation mark
+  min_chunk_chars: 1

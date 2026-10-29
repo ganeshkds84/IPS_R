@@ -13,8 +13,11 @@ from ips_r.config.schema import (
     ExperimentConfig,
     LoggingConfig,
     PathsConfig,
+    PreparationConfig,
     RunConfig,
     SeedConfig,
+    StatisticsConfig,
+    ValidationConfig,
 )
 
 __all__ = [
@@ -23,8 +26,11 @@ __all__ = [
     "ExperimentConfig",
     "LoggingConfig",
     "PathsConfig",
+    "PreparationConfig",
     "RunConfig",
     "SeedConfig",
+    "StatisticsConfig",
+    "ValidationConfig",
     "as_app_config",
     "load_config",
     "register_configs",

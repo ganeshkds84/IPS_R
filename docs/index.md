@@ -2,14 +2,16 @@
 
 | Page | Contents |
 | --- | --- |
-| [architecture.md](architecture.md) | Package structure, component interfaces, extension guide |
-| [configuration.md](configuration.md) | Hydra config groups, overrides, environment variables |
-| [reproducibility.md](reproducibility.md) | Seeds, run directories, metadata |
+| [../AGENTS.md](../AGENTS.md) | Binding engineering rules |
+| [architecture.md](architecture.md) | Package structure, component interfaces, dataset layer, extension guide |
+| [configuration.md](configuration.md) | Hydra config groups (datasets, chunkers, preparation), overrides, environment variables |
+| [reproducibility.md](reproducibility.md) | Seeds, run directories, metadata, content hashes |
 | [development.md](development.md) | Tooling, quality gates, CI, Docker |
 
-## Sprint status
+## Status
 
-| Sprint | Scope | Status |
+| Stage | Scope | Status |
 | --- | --- | --- |
-| 1 | Infrastructure and interfaces | Done |
-| 2+ | Research components | Not started |
+| Sprint 1 | Infrastructure and interfaces | Done |
+| Milestone 1 | Dataset layer: ingestion, validation, canonical models, PDF parsing, chunking, statistics | Done |
+| Milestone 2+ | Retrieval and later research components | Not started |

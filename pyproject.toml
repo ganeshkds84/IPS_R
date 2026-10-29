@@ -28,6 +28,7 @@ dependencies = [
     "typer>=0.12.5",
     "rich>=13.7",
     "numpy>=1.26",
+    "pdfplumber>=0.11",
 ]
 
 [project.scripts]
@@ -41,6 +42,8 @@ dev = [
     "black>=24.10",
     "mypy>=1.13",
     "pre-commit>=4.0",
+    "reportlab>=4.2",
+    "types-reportlab>=5.0.0.20261008",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -122,7 +125,7 @@ branch = true
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
-fail_under = 85
+fail_under = 95
 exclude_also = [
     "raise NotImplementedError",
     "if TYPE_CHECKING:",

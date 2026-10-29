@@ -1,0 +1,11 @@
+# Natural Questions (JSON lines, .jsonl or .jsonl.gz; simplified or original layout).
+#   ips-r prepare dataset=natural_questions dataset.params.path=/data/nq/dev.jsonl.gz
+name: natural_questions
+params:
+  path: ${paths.data}/raw/natural_questions/v1.0-simplified_nq-dev-all.jsonl.gz
+  split: dev
+  version: v1.0-simplified
+  strip_html: true          # drop HTML tokens such as <P> from text and answers
+  max_documents: null
+  max_questions: null
+  strict: false

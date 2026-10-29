@@ -23,7 +23,21 @@ VALID_LEVELS: Final[frozenset[str]] = frozenset({"CRITICAL", "ERROR", "WARNING",
 VALID_FORMATS: Final[frozenset[str]] = frozenset({"console", "json"})
 
 _HANDLER_MARKER: Final = "_ips_r_handler"
-_NOISY_LOGGERS: Final = ("urllib3", "filelock", "fsspec", "matplotlib", "PIL", "asyncio")
+_NOISY_LOGGERS: Final = (
+    "urllib3",
+    "filelock",
+    "fsspec",
+    "matplotlib",
+    "PIL",
+    "asyncio",
+    "pdfminer",
+    "pdfplumber",
+)
+
+if not structlog.is_configured():
+    # Until configure_logging() runs, drop debug events emitted at import time
+    # (e.g. component registrations) instead of printing them to stdout.
+    structlog.configure(wrapper_class=structlog.make_filtering_bound_logger(logging.INFO))
 
 
 def _shared_processors() -> list[Processor]:

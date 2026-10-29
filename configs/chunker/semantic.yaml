@@ -1,0 +1,7 @@
+# Semantic chunking: INTERFACE PLACEHOLDER. Selecting it fails with an explanatory error,
+# because similarity scoring needs an embedding model (out of scope for the dataset layer).
+name: semantic
+params:
+  similarity_threshold: 0.5
+  min_sentences: 1
+  max_sentences: 20
