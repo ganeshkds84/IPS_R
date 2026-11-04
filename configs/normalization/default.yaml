@@ -1,0 +1,17 @@
+# Text cleaning and normalisation (ips_r.knowledge.normalization.TextNormalizer).
+# Steps run in this order; every step is offset-preserving, so cleaned text stays
+# traceable to exact original-document character spans.
+#   ips-r build-knowledge dataset=squad normalization.lowercase=true
+unicode_form: NFC           # NFC | NFKC | NFD | NFKD | none
+remove_control_chars: true  # C0/C1 control characters (keeps \n and \t)
+remove_zero_width: true     # zero-width spaces/joiners, bidi marks, BOM
+expand_ligatures: true      # ﬁ -> fi, ﬂ -> fl, ﬀ -> ff, ...
+ligatures: {}               # extra/overriding ligature mappings, e.g. {"Æ": "AE"}
+normalize_hyphens: true     # drop soft hyphens; unify dash variants to dash_replacement
+dehyphenate: true           # join words broken at line ends: "repre-\nsentation"
+dash_replacement: "-"
+normalize_quotes: true      # curly/angle quotes -> ' and "
+normalize_whitespace: true  # Unicode spaces -> " ", collapse runs, trim
+preserve_newlines: true     # keep line/paragraph breaks (blank-line runs collapse to one)
+lowercase: false
+preserve_punctuation: true  # false replaces every non-word, non-space character with a space

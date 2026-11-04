@@ -8,6 +8,12 @@ defaults:
   - logging: default
   - seed: default
   - preparation: default
+  - normalization: default
+  - processing: default
+  - serialization: default
+  - knowledge: default
+  - embedding: none
+  - index: none
   - dataset: none
   - chunker: none
   - retriever: none

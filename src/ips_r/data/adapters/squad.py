@@ -12,10 +12,11 @@ Document id: ``"<title>#<paragraph index>"``.
 from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
+from functools import partial
 from pathlib import Path
 from typing import Any, ClassVar, Final
 
-from ips_r.data.adapters.common import STR, unique, to_title
+from ips_r.data.adapters.common import STR, to_title, unique
 from ips_r.data.base import DATASETS, AbstractDataset
 from ips_r.data.io import load_json
 from ips_r.data.issues import IssueCode
@@ -94,16 +95,20 @@ class SquadDataset(AbstractDataset):
                 ):
                     yield p_location, doc_id, title, paragraph
 
+    def _document(self, doc_id: str, title: str, paragraph: Mapping[str, Any]) -> Document:
+        """Build the document of a paragraph (raises ``ValueError`` on invalid fields)."""
+        return Document(
+            id=doc_id,
+            text=paragraph["context"],
+            metadata=DocumentMetadata(title=to_title(title), language=self.language),
+            source=str(self._path),
+            extra={"article_title": title},
+        )
+
     def _iter_documents(self) -> Iterator[Document]:
         for location, doc_id, title, paragraph in self._paragraphs():
             document = self._build(
-                lambda: Document(
-                    id=doc_id,
-                    text=paragraph["context"],
-                    metadata=DocumentMetadata(title=to_title(title), language=self.language),
-                    source=str(self._path),
-                    extra={"article_title": title},
-                ),
+                partial(self._document, doc_id, title, paragraph),
                 record_id=doc_id,
                 location=location,
             )

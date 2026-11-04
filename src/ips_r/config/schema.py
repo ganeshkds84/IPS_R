@@ -134,6 +134,127 @@ class PreparationConfig:
 
 
 @dataclass
+class NormalizationConfig:
+    """Text cleaning and normalisation (:class:`ips_r.knowledge.normalization.TextNormalizer`).
+
+    Steps run in a fixed order: Unicode form → control characters → ligatures →
+    hyphens → quotes → punctuation → lowercase → whitespace.
+    """
+
+    unicode_form: str = "NFC"
+    remove_control_chars: bool = True
+    remove_zero_width: bool = True
+    expand_ligatures: bool = True
+    ligatures: dict[str, str] = field(default_factory=dict)
+    normalize_hyphens: bool = True
+    dehyphenate: bool = True
+    dash_replacement: str = "-"
+    normalize_quotes: bool = True
+    normalize_whitespace: bool = True
+    preserve_newlines: bool = True
+    lowercase: bool = False
+    preserve_punctuation: bool = True
+
+
+@dataclass
+class StructureConfig:
+    """Structural analysis (:class:`ips_r.knowledge.structure.StructuralAnalyzer`)."""
+
+    detect_citations: bool = True
+    detect_cross_references: bool = True
+    numeric_citation_pattern: str = r"\[(\d+(?:\s*[-\u2013,;]\s*\d+)*)\]"
+    author_year_citation_pattern: str = (
+        r"\(((?:[A-Z][A-Za-z'\-]+(?: et al\.)?(?: (?:and|&) [A-Z][A-Za-z'\-]+)?,? "
+        r"(?:19|20)\d{2}[a-z]?(?:;\s*)?)+)\)"
+    )
+    cross_reference_pattern: str = (
+        r"\b(Figures?|Figs?\.|Tables?|Tab\.|Sections?|Sec\.|Equations?|Eqs?\.|Appendix)"
+        r"\s*\(?([A-Z]?\d+(?:\.\d+)*|[A-Z](?![a-z]))\)?"
+    )
+    section_number_pattern: str = r"^((?:\d+|[A-Z])(?:\.\d+)*)\.?\s+(?=\S)"
+    appendix_heading_pattern: str = r"^(?:appendix|appendices|supplementary material)\b"
+    paragraph_separator_pattern: str = r"\n\s*\n"
+
+
+@dataclass
+class ChunkProcessingConfig:
+    """Section/table/caption-aware chunk processing (:mod:`ips_r.knowledge.chunking`)."""
+
+    section_aware: bool = True
+    table_aware: bool = True
+    caption_aware: bool = True
+    max_table_chars: int = 2000
+    include_front_matter: bool = True
+    include_references: bool = False
+    include_footnotes: bool = True
+    max_overlap_ratio: float = 0.5
+    deduplicate: str = "mark"
+
+
+@dataclass
+class EnrichmentConfig:
+    """Chunk metadata enrichment (:class:`ips_r.knowledge.enrichment.MetadataEnricher`)."""
+
+    fields: list[str] = field(
+        default_factory=lambda: [
+            "title",
+            "authors",
+            "year",
+            "venue",
+            "doi",
+            "language",
+            "section_path",
+            "section_number",
+            "is_appendix",
+            "pages",
+            "citations",
+            "cross_references",
+            "token_count",
+        ]
+    )
+    token_pattern: str = r"\w+|[^\w\s]"
+
+
+@dataclass
+class ProcessingConfig:
+    """Knowledge processing: structure analysis, chunk processing and enrichment."""
+
+    structure: StructureConfig = field(default_factory=StructureConfig)
+    chunking: ChunkProcessingConfig = field(default_factory=ChunkProcessingConfig)
+    enrichment: EnrichmentConfig = field(default_factory=EnrichmentConfig)
+
+
+@dataclass
+class SerializationConfig:
+    """Artifact export (:mod:`ips_r.knowledge.serialization`)."""
+
+    formats: list[str] = field(default_factory=lambda: ["jsonl", "parquet"])
+    batch_size: int = 1000
+    parquet_compression: str = "zstd"
+    write_checksums: bool = True
+
+
+@dataclass
+class IndexConfig:
+    """Index component selections (interfaces only in Milestone 2)."""
+
+    vector_store: ComponentConfig = field(default_factory=ComponentConfig)
+    sparse: ComponentConfig = field(default_factory=ComponentConfig)
+    hybrid: ComponentConfig = field(default_factory=ComponentConfig)
+
+
+@dataclass
+class KnowledgeConfig:
+    """Behaviour of :func:`ips_r.knowledge.pipeline.build_knowledge_artifacts`."""
+
+    output_subdir: str = "knowledge"
+    drop_invalid: bool = True
+    fail_on_error: bool = False
+    validation: ValidationConfig = field(default_factory=ValidationConfig)
+    statistics: StatisticsConfig = field(default_factory=StatisticsConfig)
+
+
+@dataclass
 class AppConfig:
     """Root configuration schema."""
 
@@ -143,6 +264,12 @@ class AppConfig:
     seed: SeedConfig = field(default_factory=SeedConfig)
     run: RunConfig = field(default_factory=RunConfig)
     preparation: PreparationConfig = field(default_factory=PreparationConfig)
+    normalization: NormalizationConfig = field(default_factory=NormalizationConfig)
+    processing: ProcessingConfig = field(default_factory=ProcessingConfig)
+    serialization: SerializationConfig = field(default_factory=SerializationConfig)
+    knowledge: KnowledgeConfig = field(default_factory=KnowledgeConfig)
+    embedding: ComponentConfig = field(default_factory=ComponentConfig)
+    index: IndexConfig = field(default_factory=IndexConfig)
     dataset: ComponentConfig = field(default_factory=ComponentConfig)
     chunker: ComponentConfig = field(default_factory=ComponentConfig)
     retriever: ComponentConfig = field(default_factory=ComponentConfig)

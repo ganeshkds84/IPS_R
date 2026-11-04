@@ -13,7 +13,8 @@ Optional questions (``questions_path``, JSON lines)::
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
+from functools import partial
 from pathlib import Path
 from typing import Any, ClassVar, Final
 
@@ -115,15 +116,22 @@ class AcademicPDFDataset(AbstractDataset):
                 )
                 continue
             question = self._build(
-                lambda: Question(
-                    id=str(record["id"]),
-                    text=record["question"],
-                    answers=unique(answers),
-                    supporting_document_ids=unique(doc_ids),
-                    question_type=record.get("type"),
-                ),
+                partial(_question, record, answers, doc_ids),
                 record_id=record_id,
                 location=location,
             )
             if question is not None:
                 yield question
+
+
+def _question(
+    record: Mapping[str, Any], answers: Sequence[str], doc_ids: Sequence[str]
+) -> Question:
+    """Build a question record (raises ``ValueError`` on invalid fields)."""
+    return Question(
+        id=str(record["id"]),
+        text=record["question"],
+        answers=unique(answers),
+        supporting_document_ids=unique(doc_ids),
+        question_type=record.get("type"),
+    )

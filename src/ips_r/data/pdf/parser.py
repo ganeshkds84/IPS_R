@@ -103,6 +103,7 @@ class PDFParser:
                 section=block.section,
                 level=block.level,
                 rows=block.rows,
+                bbox=block.bbox,
             )
             for block in layout.blocks
         ]

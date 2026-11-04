@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterator, Mapping, Sequence
+from functools import partial
 from pathlib import Path
 from typing import Any, ClassVar, Final
 
@@ -112,19 +113,25 @@ class NaturalQuestionsDataset(AbstractDataset):
         """Join tokens into text, dropping HTML tokens when configured."""
         return " ".join(tok for tok, html in tokens if tok and not (html and self._strip_html))
 
+    def _document(
+        self, record_id: str, record: Mapping[str, Any], tokens: Sequence[Token]
+    ) -> Document:
+        """Build the document of an example (raises ``ValueError`` on invalid fields)."""
+        return Document(
+            id=record_id,
+            text=self._join(tokens),
+            metadata=DocumentMetadata(
+                title=record.get("document_title"),
+                url=record.get("document_url"),
+                language=self.language,
+            ),
+            source=str(self._path),
+        )
+
     def _iter_documents(self) -> Iterator[Document]:
         for location, record_id, record, tokens in self._examples():
             document = self._build(
-                lambda: Document(
-                    id=record_id,
-                    text=self._join(tokens),
-                    metadata=DocumentMetadata(
-                        title=record.get("document_title"),
-                        url=record.get("document_url"),
-                        language=self.language,
-                    ),
-                    source=str(self._path),
-                ),
+                partial(self._document, record_id, record, tokens),
                 record_id=record_id,
                 location=location,
             )
@@ -139,14 +146,7 @@ class NaturalQuestionsDataset(AbstractDataset):
                 "yes_no" if yes_no else "short" if answers else "long" if has_long else "none"
             )
             question = self._build(
-                lambda: Question(
-                    id=record_id,
-                    text=record["question_text"],
-                    answers=unique(answers),
-                    supporting_document_ids=(record_id,),
-                    question_type=question_type,
-                    metadata={"has_long_answer": has_long},
-                ),
+                partial(_question, record_id, record, answers, question_type, has_long),
                 record_id=record_id,
                 location=location,
             )
@@ -194,3 +194,21 @@ class NaturalQuestionsDataset(AbstractDataset):
                 if text:
                     answers.append(text)
         return answers, has_long
+
+
+def _question(
+    record_id: str,
+    record: Mapping[str, Any],
+    answers: Sequence[str],
+    question_type: str,
+    has_long: bool,
+) -> Question:
+    """Build the question of an example (raises ``ValueError`` on invalid fields)."""
+    return Question(
+        id=record_id,
+        text=record["question_text"],
+        answers=unique(answers),
+        supporting_document_ids=(record_id,),
+        question_type=question_type,
+        metadata={"has_long_answer": has_long},
+    )

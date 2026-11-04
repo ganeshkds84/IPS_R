@@ -44,7 +44,16 @@ def test_parser_preserves_structure(pdf_dir: Path) -> None:
         ("1 Introduction", 1),
         ("1.1 Problem Setting", 2),
         ("References", 1),
+        ("Appendix A Proofs", 1),
+        ("A.1 Lemma Details", 2),
     ]
+    equation = next(e for e in doc.elements if e.type is ElementType.EQUATION)
+    assert equation.text == "score(q, d) = w * sim(q, d) + b (1)"
+    footnote = next(e for e in doc.elements if e.type is ElementType.FOOTNOTE)
+    assert footnote.text.startswith("1 Code and data")
+    assert footnote.page == 1
+    assert all(e.bbox is not None for e in doc.elements)
+    assert doc.elements[0].bbox is not None and doc.elements[0].bbox[1] < footnote.bbox[1]  # type: ignore[index]
     references = [e for e in doc.elements if e.type is ElementType.REFERENCE]
     assert len(references) == 2
     assert all(e.page == 2 and e.section == "References" for e in references)

@@ -6,6 +6,8 @@ Examples::
     ips-r config seed.value=7 experiment=example
     ips-r run --dry-run
     ips-r prepare dataset=squad chunker=recursive_character
+    ips-r build-knowledge dataset=academic_pdf chunker=sentence
+    ips-r verify-artifacts outputs/default/<run_id>/knowledge
     ips-r --env-file .env.local run logging.level=DEBUG
 """
 
@@ -26,7 +28,13 @@ from ips_r.core.env import load_env_file, load_settings
 from ips_r.core.exceptions import IPSRError
 from ips_r.core.log import configure_logging, get_logger
 from ips_r.core.paths import find_config_dir, find_project_root
-from ips_r.experiment.runner import execute_preparation, execute_run, run_context
+from ips_r.experiment.runner import (
+    execute_knowledge,
+    execute_preparation,
+    execute_run,
+    run_context,
+)
+from ips_r.knowledge.serialization import verify_artifacts
 from ips_r.pipeline.builder import COMPONENT_REGISTRIES
 
 logger = get_logger(__name__)
@@ -164,6 +172,44 @@ def prepare(overrides: OverridesArg = None) -> None:
         table.add_row(key, str(value))
     console.print(table)
     typer.echo(f"run {ctx.run_id} [{summary['status']}] -> {ctx.output_dir}")
+
+
+@app.command("build-knowledge")
+def build_knowledge(overrides: OverridesArg = None) -> None:
+    """Build index-ready knowledge artifacts for the configured dataset in a tracked run."""
+    try:
+        cfg = load_config(overrides or [])
+        with run_context(cfg) as ctx:
+            summary = execute_knowledge(ctx)
+    except IPSRError as exc:
+        _fail(exc)
+    table = Table(title="Knowledge artifacts", show_header=False)
+    table.add_column("key", style="bold")
+    table.add_column("value")
+    for key in ("artifact_id", "documents", "sections", "chunks", "citations", "references"):
+        table.add_row(key, str(summary[key]))
+    table.add_row(
+        "dropped / failed", f"{summary['documents_dropped']} / {summary['documents_failed']}"
+    )
+    table.add_row("output", summary["output_dir"])
+    console.print(table)
+    typer.echo(f"run {ctx.run_id} [{summary['status']}] -> {ctx.output_dir}")
+
+
+@app.command("verify-artifacts")
+def verify(
+    directory: Annotated[Path, typer.Argument(help="Knowledge artifact directory.")],
+) -> None:
+    """Verify an artifact directory against its manifest and checksums."""
+    try:
+        problems = verify_artifacts(directory)
+    except IPSRError as exc:
+        _fail(exc)
+    if problems:
+        for problem in problems:
+            err_console.print(f"[red]{problem}[/]", highlight=False)
+        raise typer.Exit(code=1)
+    typer.echo(f"OK: {directory}")
 
 
 def main() -> None:

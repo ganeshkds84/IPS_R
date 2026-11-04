@@ -16,6 +16,8 @@ from ips_r.data.base import DATASETS
 from ips_r.data.chunking.base import CHUNKERS
 from ips_r.evaluation.base import EVALUATORS
 from ips_r.generation.base import GENERATORS
+from ips_r.knowledge.embedding import EMBEDDING_MODELS
+from ips_r.knowledge.indexing import HYBRID_INDEXERS, SPARSE_INDEXERS, VECTOR_STORES
 from ips_r.pipeline.base import PIPELINES, AbstractPipeline
 from ips_r.pipeline.components import PipelineComponents
 from ips_r.policy.base import DECISION_POLICIES
@@ -34,11 +36,15 @@ COMPONENT_REGISTRIES: Final[Mapping[str, Registry[Any]]] = {
     "generator": GENERATORS,
     "evaluator": EVALUATORS,
     "pipeline": PIPELINES,
+    "embedding": EMBEDDING_MODELS,
+    "vector_store": VECTOR_STORES,
+    "sparse_indexer": SPARSE_INDEXERS,
+    "hybrid_indexer": HYBRID_INDEXERS,
 }
-"""All registries keyed by their config key."""
+"""All registries by kind (pipeline components are built from ``COMPONENT_KEYS``)."""
 
 
-def _parse_selection(kind: str, node: Any) -> tuple[str | None, dict[str, Any]]:
+def parse_selection(kind: str, node: Any) -> tuple[str | None, dict[str, Any]]:
     """Extract ``(name, params)`` from a component config node.
 
     Raises:
@@ -70,7 +76,7 @@ def build_component[T](registry: Registry[T], node: Any) -> T | None:
         ConfigurationError: If the node is malformed or names an unregistered component.
         PipelineError: If construction fails.
     """
-    name, params = _parse_selection(registry.kind, node)
+    name, params = parse_selection(registry.kind, node)
     if name is None:
         logger.debug("component.disabled", kind=registry.kind)
         return None
@@ -110,7 +116,7 @@ def build_pipeline(
         ConfigurationError: If the selection is invalid.
         PipelineError: If construction fails.
     """
-    name, params = _parse_selection("pipeline", cfg.get("pipeline"))
+    name, params = parse_selection("pipeline", cfg.get("pipeline"))
     if name is None:
         logger.debug("pipeline.disabled")
         return None

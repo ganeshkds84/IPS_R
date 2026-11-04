@@ -1,0 +1,6 @@
+# Artifact export (ips_r.knowledge.serialization).
+#   ips-r build-knowledge dataset=squad 'serialization.formats=[jsonl,arrow,parquet]'
+formats: [jsonl, parquet]   # any of: jsonl | arrow | parquet
+batch_size: 1000            # records per Arrow/Parquet record batch
+parquet_compression: zstd   # zstd | snappy | gzip | none
+write_checksums: true       # checksums.sha256 over data files + manifest

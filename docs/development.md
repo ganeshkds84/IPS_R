@@ -42,6 +42,10 @@ In summary, every module must have:
 - `tests/unit/`: isolated tests of each module
 - `tests/integration/`: config → components → run directory, and the CLI
 - `tests/fakes.py`: minimal in-memory implementations of every interface
+- `tests/knowledge_fakes.py`: in-memory embedding model, cache, vector store, sparse and
+  hybrid indexer that exercise the Milestone 2 interfaces (test doubles, not implementations)
+- `tests/knowledge_factories.py`: synthetic structured papers (every element type,
+  nested and appendix sections, citations, tables) and an in-memory dataset
 - `tests/data_factories.py`: builds hermetic dataset fixtures in `tmp_path` for every
   source format: SQuAD, HotpotQA, NQ (gzip and original layout), MS MARCO TSV, and
   PDFs generated with reportlab (paper, two-column, blank, corrupted). Each fixture
@@ -54,7 +58,27 @@ Runtime dependencies added in Milestone 1:
 Dev-only dependencies added in Milestone 1:
 - `reportlab` (BSD): builds PDF test fixtures.
 - `types-reportlab`: type stubs for reportlab.
-- The autouse fixture in `tests/conftest.py` strips `IPS_R_*` variables and resets logging between tests.
+
+Runtime dependencies added in Milestone 2:
+- `pyarrow` (Apache-2.0): Apache Arrow IPC and Parquet export of knowledge artifacts.
+  It is imported lazily and only in `ips_r.knowledge.artifact_schema`. pyarrow ships
+  no type stubs, so `[[tool.mypy.overrides]]` sets `ignore_missing_imports` for
+  `pyarrow.*`, and the adapter treats the module as `Any` at that boundary.
+
+The autouse fixture in `tests/conftest.py` strips `IPS_R_*` variables and resets
+logging between tests.
+
+Knowledge-pipeline tests include regression tests (byte-identical rebuilds,
+per-document invalidation, overlap validation of short tail chunks, writer clean-up on
+failure) and stress tests (80 synthetic papers, and one document with more than
+160 sections).
+
+### Ruff scope
+
+`[tool.ruff] extend-exclude` lists the git-ignored working directories as
+root-anchored paths (`./data`, `./outputs`, …). A bare name such as `data` matches
+every directory of that name, and it had silently excluded `src/ips_r/data/` from
+`ruff check .`. Use the `./` form for any new exclusion.
 
 ## Continuous integration
 

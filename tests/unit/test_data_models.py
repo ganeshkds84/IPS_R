@@ -191,3 +191,23 @@ def test_dataset_metadata() -> None:
         DatasetMetadata(name="", adapter="X")
     with pytest.raises(ValueError):
         DatasetMetadata(name="n", adapter="X", num_questions=-1)
+
+
+@pytest.mark.parametrize(
+    ("bbox", "message"),
+    [
+        ((1.0, 2.0, 3.0), "4-tuple"),
+        ("0,0,1,1", "4-tuple"),
+        ((0, 0, True, 1), "numbers"),
+        ((5.0, 0.0, 1.0, 1.0), "x0 <= x1"),
+    ],
+)
+def test_element_bbox_validation(bbox: Any, message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        ElementDraft(ElementType.PARAGRAPH, "Body", page=1, bbox=bbox)
+    assert ElementDraft(ElementType.PARAGRAPH, "Body", bbox=(0, 0, 1, 2)).bbox == (
+        0.0,
+        0.0,
+        1.0,
+        2.0,
+    )

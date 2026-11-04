@@ -273,10 +273,16 @@ def paper_pdf(path: Path, *, info: bool = True) -> Path:
         Paragraph("Keywords: retrieval; query reformulation; intent", s["body"]),
         Paragraph("1 Introduction", s["heading"]),
         Paragraph(INTRO * 6, s["body"]),
-        Paragraph(INTRO * 3, s["body"]),
+        Paragraph(
+            INTRO * 2 + "Prior work [1, 2] studied retrieval (Author, 2021). "
+            "Figure 1 and Table 1 summarise the setting described in Section 1.1.",
+            s["body"],
+        ),
         Paragraph("Figure 1: Overview of the system.", s["body"]),
         Paragraph("1.1 Problem Setting", s["subheading"]),
         Paragraph("The problem is defined over queries and documents. " * 4, s["body"]),
+        Paragraph("score(q, d) = w * sim(q, d) + b (1)", s["body"]),
+        Paragraph("We optimise Eq. (1) on the training data, see Appendix A.", s["body"]),
         Table(
             [["Model", "Score"], ["BM25", "0.41"], ["Dense", "0.52"]],
             style=TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.black)]),
@@ -286,9 +292,20 @@ def paper_pdf(path: Path, *, info: bool = True) -> Path:
         Paragraph("References", s["heading"]),
         Paragraph("[1] A. Author. A paper about retrieval. In Proc. ACL, 2020.", s["body"]),
         Paragraph("[2] B. Author. Another paper on generation. 2021.", s["body"]),
+        Paragraph("Appendix A Proofs", s["heading"]),
+        Paragraph("A.1 Lemma Details", s["subheading"]),
+        Paragraph("The lemma follows from the definitions in Section 1.", s["body"]),
     ]
-    doc.build(story)
+    doc.build(story, onFirstPage=_footnote)
     return path
+
+
+def _footnote(c: canvas.Canvas, _doc: Any) -> None:
+    """Draw a small-font footnote at the bottom of the first page."""
+    c.saveState()
+    c.setFont("Helvetica", 7)
+    c.drawString(72, 60, "1 Code and data are available from the authors.")
+    c.restoreState()
 
 
 def two_column_pdf(path: Path) -> Path:

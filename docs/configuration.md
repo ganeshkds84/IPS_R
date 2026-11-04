@@ -13,6 +13,12 @@ configs/
 ├── logging/default.yaml     level, format, file logging
 ├── seed/default.yaml        global seed, determinism
 ├── preparation/default.yaml dataset preparation, validation and statistics settings
+├── normalization/default.yaml   text cleaning and normalisation (knowledge pipeline)
+├── processing/default.yaml      structure detection, chunk processing, enrichment
+├── serialization/default.yaml   artifact formats, batch size, compression, checksums
+├── knowledge/default.yaml       `ips-r build-knowledge` behaviour, validation, statistics
+├── embedding/none.yaml          embedding model (interface only; none registered)
+├── index/none.yaml              vector_store / sparse / hybrid (interfaces only; none registered)
 ├── experiment/              optional presets (# @package _global_)
 │   └── example.yaml
 ├── dataset/                 ┐ none | squad | hotpotqa | natural_questions | ms_marco | academic_pdf
@@ -95,6 +101,70 @@ uv run ips-r prepare dataset=ms_marco dataset.params.max_documents=100000 \
     chunker=token chunker.params.chunk_size=128 preparation.fail_on_error=true
 ```
 
+## Knowledge pipeline
+
+These groups configure `ips-r build-knowledge`. The running-text chunking strategy is
+the Milestone 1 `chunker=` group; `chunker=none` keeps one chunk per section, table or
+caption unit.
+
+### Normalisation (`configs/normalization/default.yaml`)
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `unicode_form` | `NFC` | `NFC` / `NFKC` / `NFD` / `NFKD` / `none` |
+| `remove_control_chars` / `remove_zero_width` | `true` / `true` | Drop C0/C1 controls (keeps newlines and tabs) and zero-width / bidi characters |
+| `expand_ligatures`, `ligatures` | `true`, `{}` | Expand `ﬁ`, `ﬂ`, …; extra or overriding mappings |
+| `normalize_hyphens`, `dehyphenate`, `dash_replacement` | `true`, `true`, `-` | Drop soft hyphens, join words broken at line ends (`repre-` + `sentation`), unify dash variants |
+| `normalize_quotes` | `true` | Curly / angle quotes → ASCII |
+| `normalize_whitespace`, `preserve_newlines` | `true`, `true` | Collapse whitespace runs; keep line and paragraph breaks |
+| `lowercase` | `false` | Lower-case all text |
+| `preserve_punctuation` | `true` | `false` replaces every non-word, non-space character with a space |
+
+### Processing (`configs/processing/default.yaml`)
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `structure.detect_citations` / `detect_cross_references` | `true` | Detect and resolve in-text citations / cross references |
+| `structure.*_pattern` | see file | Citation, cross-reference, section-number, appendix-heading and paragraph-separator regexes |
+| `chunking.section_aware` / `table_aware` / `caption_aware` | `true` | See [architecture](architecture.md#chunk-processing) |
+| `chunking.max_table_chars` | `2000` | Longer tables are split row-wise |
+| `chunking.include_front_matter` / `include_references` / `include_footnotes` | `true` / `false` / `true` | Which content becomes chunks |
+| `chunking.max_overlap_ratio` | `0.5` | Overlap validation threshold (× the longer neighbouring chunk) |
+| `chunking.deduplicate` | `mark` | `mark` / `drop` / `off` corpus-wide exact duplicates |
+| `enrichment.fields` | all 13 fields | Metadata fields added to every chunk |
+| `enrichment.token_pattern` | `\w+\|[^\w\s]` | Tokens counted for `token_count` |
+
+### Serialization (`configs/serialization/default.yaml`)
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `formats` | `[jsonl, parquet]` | Any of `jsonl`, `arrow`, `parquet` |
+| `batch_size` | `1000` | Records per Arrow / Parquet record batch |
+| `parquet_compression` | `zstd` | `zstd` / `snappy` / `gzip` / `none` |
+| `write_checksums` | `true` | Write `checksums.sha256` |
+
+### Knowledge run (`configs/knowledge/default.yaml`)
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `output_subdir` | `knowledge` | Artifacts go to `<run_dir>/<output_subdir>/` |
+| `drop_invalid` | `true` | Skip documents and questions with error-severity validation issues |
+| `fail_on_error` | `false` | Exit non-zero (after writing everything) on validation errors or failed documents |
+| `validation.*`, `statistics.*` | as in `preparation` | Validation checks and token statistics |
+
+### Embedding and index (`configs/embedding/`, `configs/index/`)
+
+`embedding` is a component node (`name` + `params`). `index` holds three nodes:
+`vector_store`, `sparse` and `hybrid`. A hybrid indexer requires both a vector store
+and a sparse indexer. No implementation is registered in Milestone 2, so only
+`none.yaml` exists. Selecting a name fails at the start of `ips-r build-knowledge`,
+with the list of available implementations.
+
+```bash
+uv run ips-r build-knowledge dataset=academic_pdf chunker=sentence \
+    processing.chunking.deduplicate=drop 'serialization.formats=[jsonl,arrow,parquet]'
+```
+
 ## Loading
 
 ```bash
@@ -118,6 +188,7 @@ directory or take over logging. Run directories are managed by `ips_r.experiment
 | --- | --- |
 | Change a value | `seed.value=7` |
 | Select a group option | `retriever=my_retriever`, `dataset=squad`, `chunker=sentence` |
+| Change a knowledge setting | `normalization.lowercase=true`, `processing.chunking.max_table_chars=4000` |
 | Change a component param | `chunker.params.chunk_size=512` |
 | Apply a preset | `experiment=example` |
 | Add a new component param | `+retriever.params.top_k=50` |

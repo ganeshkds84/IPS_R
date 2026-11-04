@@ -1,0 +1,15 @@
+# Behaviour of `ips-r build-knowledge` (ips_r.knowledge.pipeline.build_knowledge_artifacts).
+#   ips-r build-knowledge dataset=academic_pdf knowledge.fail_on_error=true
+output_subdir: knowledge    # artifacts go to <run_dir>/<output_subdir>/
+drop_invalid: true          # skip documents/questions with error-severity validation issues
+fail_on_error: false        # fail the run (after writing everything) on validation/processing errors
+validation:
+  check_encoding: true
+  check_metadata: true
+  min_year: 1500
+  max_year: 2100
+  max_issues_per_code: 100
+statistics:
+  word_pattern: '\w+'
+  lowercase: true
+  top_k_terms: 25           # size of the most-cited references list

@@ -1,0 +1,11 @@
+# Index components (interfaces only in Milestone 2; none are registered).
+# Each entry selects an implementation of the corresponding abstract interface.
+vector_store:   # ips_r.knowledge.indexing.AbstractVectorStore
+  name: null
+  params: {}
+sparse:         # ips_r.knowledge.indexing.AbstractSparseIndexer
+  name: null
+  params: {}
+hybrid:         # ips_r.knowledge.indexing.AbstractHybridIndexer (wraps vector_store + sparse)
+  name: null
+  params: {}

@@ -1,0 +1,27 @@
+# Knowledge processing: structural analysis, chunk processing, metadata enrichment.
+# Running text is split by the Milestone 1 strategy selected with `chunker=...`
+# (chunker=none keeps one chunk per section/table/caption unit).
+#   ips-r build-knowledge dataset=academic_pdf chunker=sentence processing.chunking.deduplicate=drop
+structure:
+  detect_citations: true            # numeric [1, 3-5] and author-year (Smith et al., 2020)
+  detect_cross_references: true     # Figure 2, Table 1, Section 3.1, Eq. (4), Appendix A
+  numeric_citation_pattern: '\[(\d+(?:\s*[-–,;]\s*\d+)*)\]'
+  author_year_citation_pattern: '\(((?:[A-Z][A-Za-z''\-]+(?: et al\.)?(?: (?:and|&) [A-Z][A-Za-z''\-]+)?,? (?:19|20)\d{2}[a-z]?(?:;\s*)?)+)\)'
+  cross_reference_pattern: '\b(Figures?|Figs?\.|Tables?|Tab\.|Sections?|Sec\.|Equations?|Eqs?\.|Appendix)\s*\(?([A-Z]?\d+(?:\.\d+)*|[A-Z](?![a-z]))\)?'
+  section_number_pattern: '^((?:\d+|[A-Z])(?:\.\d+)*)\.?\s+(?=\S)'
+  appendix_heading_pattern: '^(?:appendix|appendices|supplementary material)\b'
+  paragraph_separator_pattern: '\n\s*\n'   # paragraph split for documents without elements
+chunking:
+  section_aware: true        # chunks never cross section boundaries
+  table_aware: true          # a table (+ caption) is one chunk; split by rows only if too long
+  caption_aware: true        # figure captions are standalone, never-split chunks
+  max_table_chars: 2000      # larger tables are split row-wise, repeating caption + header
+  include_front_matter: true # title / authors / affiliations as a chunk
+  include_references: false  # bibliography entries as chunks
+  include_footnotes: true
+  max_overlap_ratio: 0.5     # overlap validation: flag overlaps above ratio x longer neighbour
+  deduplicate: mark          # mark | drop | off (corpus-wide exact duplicates)
+enrichment:
+  fields: [title, authors, year, venue, doi, language, section_path, section_number,
+           is_appendix, pages, citations, cross_references, token_count]
+  token_pattern: '\w+|[^\w\s]'

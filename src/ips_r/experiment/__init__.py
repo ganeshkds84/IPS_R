@@ -2,6 +2,8 @@
 
 from ips_r.experiment.runner import (
     RunContext,
+    build_index_components,
+    execute_knowledge,
     execute_preparation,
     execute_run,
     finalize_run,
@@ -11,6 +13,8 @@ from ips_r.experiment.runner import (
 
 __all__ = [
     "RunContext",
+    "build_index_components",
+    "execute_knowledge",
     "execute_preparation",
     "execute_run",
     "finalize_run",

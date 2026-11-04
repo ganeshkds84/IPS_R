@@ -44,11 +44,13 @@ DEFAULT_ABBREVIATIONS: Final[tuple[str, ...]] = (
 )
 """Abbreviations after which a period does not end a sentence (lower case)."""
 
-_SENTENCE_END: Final = re.compile(r"[.!?]+[\"'”’)\]]*(?=\s+|$)")
+_SENTENCE_END: Final = re.compile(r"[.!?]+[\"'\u201d\u2019)\]]*(?=\s+|$)")
 _PARAGRAPH_BREAK: Final = re.compile(r"\n[ \t]*\n")
 _INITIAL: Final = re.compile(r"(?:^|\s)[A-Z]\.$")
-_MOJIBAKE: Final = re.compile("Ã[\u0080-¿]|â€|Â[ -¿]")
+_MOJIBAKE: Final = re.compile("Ã[\u0080-¿]|â€|Â[\u00a0-¿]")
 _ALLOWED_CONTROL: Final = frozenset("\n\r\t")
+_SURROGATE_FIRST: Final = 0xD800
+_SURROGATE_LAST: Final = 0xDFFF
 _WHITESPACE: Final = re.compile(r"\s+")
 
 
@@ -143,7 +145,7 @@ def encoding_problems(text: str) -> list[str]:
     problems: list[str] = []
     if "�" in text:
         problems.append("contains U+FFFD replacement characters")
-    if any(0xD800 <= ord(char) <= 0xDFFF for char in text):
+    if any(_SURROGATE_FIRST <= ord(char) <= _SURROGATE_LAST for char in text):
         problems.append("contains unpaired surrogate code points")
     if any(unicodedata.category(char) == "Cc" and char not in _ALLOWED_CONTROL for char in text):
         problems.append("contains control characters")

@@ -23,7 +23,9 @@ _COPYRIGHT_YEAR: Final = re.compile(r"(?:©|\(c\)|copyright)\s*(\d{4})", re.IGNO
 _ARXIV: Final = re.compile(r"\barXiv:\s?(\d{2})(\d{2})\.\d{4,5}(?:v\d+)?", re.IGNORECASE)
 _PDF_DATE_YEAR: Final = re.compile(r"^(?:D:)?(\d{4})")
 _YEAR: Final = re.compile(r"\b(\d{4})\b")
-_AUTHOR_MARKERS: Final = re.compile(r"[\d*†‡§¶∗]+")
+_MIN_AUTHOR_CHARS: Final = 2
+_SHORT_YEAR_DIGITS: Final = 2  # "EMNLP '23"
+_AUTHOR_MARKERS: Final = re.compile(r"[\d*\u2020\u2021\u00a7\u00b6\u2217]+")
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,8 +62,8 @@ class MetadataSettings:
         "LREC",
         "CoNLL",
     )
-    keyword_pattern: str = r"(?:Keywords|Key words|Index Terms)\s*[:.—–-]\s*(.+)"
-    abstract_prefix_pattern: str = r"^abstract\s*[:.—–-]?\s*"
+    keyword_pattern: str = r"(?:Keywords|Key words|Index Terms)\s*[:.\u2014\u2013-]\s*(.+)"
+    abstract_prefix_pattern: str = r"^abstract\s*[:.\u2014\u2013-]?\s*"
     min_year: int = 1900
     max_year: int = 2100
     language_min_tokens: int = 20
@@ -83,7 +85,11 @@ def split_authors(text: str) -> tuple[str, ...]:
     names: list[str] = []
     for part in re.split(r"[,;]", normalized):
         name = " ".join(_AUTHOR_MARKERS.sub(" ", part).split())
-        if len(name) >= 2 and any(ch.isalpha() for ch in name) and name not in names:
+        if (
+            len(name) >= _MIN_AUTHOR_CHARS
+            and any(ch.isalpha() for ch in name)
+            and name not in names
+        ):
             names.append(name)
     return tuple(names)
 
@@ -116,7 +122,7 @@ class MetadataExtractor:
             self._keywords = re.compile(self._s.keyword_pattern, re.IGNORECASE)
             self._abstract_prefix = re.compile(self._s.abstract_prefix_pattern, re.IGNORECASE)
             acronyms = "|".join(re.escape(a) for a in self._s.venue_acronyms)
-            self._acronym = re.compile(rf"\b({acronyms})\b(?:\s*['’]?\s*(\d{{4}}|\d{{2}})\b)?")
+            self._acronym = re.compile(rf"\b({acronyms})\b(?:\s*['\u2019]?\s*(\d{{4}}|\d{{2}})\b)?")
         except re.error as exc:
             raise ConfigurationError(f"Invalid parser.metadata pattern: {exc}") from exc
 
@@ -195,7 +201,7 @@ class MetadataExtractor:
                 return re.sub(r"^in\s+", "", " ".join(match.group(0).split()), flags=re.IGNORECASE)
         if match := self._acronym.search(front):
             acronym, year = match.group(1), match.group(2)
-            if year and len(year) == 2:
+            if year and len(year) == _SHORT_YEAR_DIGITS:
                 year = f"20{year}"
             return f"{acronym} {year}" if year else acronym
         if _ARXIV.search(front):

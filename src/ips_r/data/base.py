@@ -202,7 +202,7 @@ class AbstractDataset(AbstractComponent):
         self._questions_cache = None
         self._release()
 
-    def _release(self) -> None:  # noqa: B027 - intentionally optional hook
+    def _release(self) -> None:
         """Hook to free cached raw data on teardown. Default is a no-op."""
 
     @abstractmethod

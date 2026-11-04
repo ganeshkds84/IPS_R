@@ -28,8 +28,9 @@ from typing import Any
 from omegaconf import DictConfig
 
 from ips_r import __version__
+from ips_r.components.base import AbstractComponent
 from ips_r.config.loader import as_app_config, save_config
-from ips_r.core.exceptions import ConfigurationError, IPSRError
+from ips_r.core.exceptions import ConfigurationError, IPSRError, PipelineError, RegistryError
 from ips_r.core.log import (
     bind_context,
     clear_context,
@@ -40,7 +41,21 @@ from ips_r.core.log import (
 from ips_r.core.paths import ProjectPaths
 from ips_r.core.seed import SeedState, seed_everything
 from ips_r.data import CHUNKERS, DATASETS, prepare_dataset
-from ips_r.pipeline.builder import build_component, build_pipeline, build_pipeline_components
+from ips_r.knowledge import (
+    EMBEDDING_MODELS,
+    HYBRID_INDEXERS,
+    SPARSE_INDEXERS,
+    VECTOR_STORES,
+    IndexComponents,
+    KnowledgeProcessor,
+    build_knowledge_artifacts,
+)
+from ips_r.pipeline.builder import (
+    build_component,
+    build_pipeline,
+    build_pipeline_components,
+    parse_selection,
+)
 
 logger = get_logger(__name__)
 
@@ -298,6 +313,80 @@ def execute_preparation(ctx: RunContext) -> dict[str, Any]:
     output_dir = ctx.output_dir / safe_name(settings.output_subdir)
     with dataset, chunker if chunker is not None else nullcontext():
         result = prepare_dataset(dataset, output_dir, chunker=chunker, settings=settings)
+    summary = {"status": "completed", **result.summary()}
+    _write_json(ctx.output_dir / "results.json", summary)
+    return summary
+
+
+def build_index_components(cfg: DictConfig) -> IndexComponents:
+    """Build the configured embedding model and index components (all optional).
+
+    Raises:
+        ConfigurationError: If a selection is invalid, or a hybrid indexer is configured
+            without both a vector store and a sparse indexer.
+        PipelineError: If construction fails.
+    """
+    index = cfg.get("index") or {}
+    components = IndexComponents(
+        embedding=build_component(EMBEDDING_MODELS, cfg.get("embedding")),
+        vector_store=build_component(VECTOR_STORES, index.get("vector_store")),
+        sparse=build_component(SPARSE_INDEXERS, index.get("sparse")),
+    )
+    name, params = parse_selection("index.hybrid", index.get("hybrid"))
+    if name is not None:
+        if components.vector_store is None or components.sparse is None:
+            raise ConfigurationError("index.hybrid requires index.vector_store and index.sparse")
+        if name not in HYBRID_INDEXERS:
+            available = ", ".join(HYBRID_INDEXERS.names()) or "<none registered>"
+            raise ConfigurationError(f"Unknown hybrid_indexer '{name}'. Available: {available}")
+        try:
+            components.hybrid = HYBRID_INDEXERS.create(
+                name, components.vector_store, components.sparse, params, name=name
+            )
+        except RegistryError as exc:
+            raise PipelineError(str(exc)) from exc
+    return components
+
+
+def execute_knowledge(ctx: RunContext) -> dict[str, Any]:
+    """Build knowledge artifacts for the configured dataset into ``<run_dir>/<knowledge.output_subdir>``.
+
+    Returns:
+        The build summary (also written to ``results.json``).
+
+    Raises:
+        ConfigurationError: If no dataset is configured or a selection is invalid.
+        PipelineError: If a component cannot be constructed.
+        DataValidationError: If ``knowledge.fail_on_error`` is set and errors occurred.
+        ComponentError: If a component fails.
+    """
+    app = as_app_config(ctx.config)
+    dataset = build_component(DATASETS, ctx.config.get("dataset"))
+    if dataset is None:
+        raise ConfigurationError("Knowledge processing requires a dataset, e.g. dataset=squad")
+    chunker = build_component(CHUNKERS, ctx.config.get("chunker"))
+    components = build_index_components(ctx.config)
+    processor = KnowledgeProcessor(app.normalization, app.processing, chunker)
+    output_dir = ctx.output_dir / safe_name(app.knowledge.output_subdir)
+    managed: list[AbstractComponent] = [
+        c for c in (dataset, chunker, components.embedding, components.hybrid) if c is not None
+    ]
+    if components.hybrid is None:
+        managed += [c for c in (components.vector_store, components.sparse) if c is not None]
+    try:
+        for component in managed:
+            component.setup()
+        result = build_knowledge_artifacts(
+            dataset,
+            output_dir,
+            processor=processor,
+            settings=app.knowledge,
+            serialization=app.serialization,
+            components=components,
+        )
+    finally:
+        for component in reversed(managed):
+            component.teardown()
     summary = {"status": "completed", **result.summary()}
     _write_json(ctx.output_dir / "results.json", summary)
     return summary

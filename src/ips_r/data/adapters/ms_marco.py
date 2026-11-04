@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Final
 
 from ips_r.data.adapters.common import unique
 from ips_r.data.base import DATASETS, AbstractDataset
@@ -23,6 +23,9 @@ from ips_r.data.io import iter_tsv
 from ips_r.data.issues import IssueCode
 from ips_r.data.models import Document, DocumentMetadata, Question
 from ips_r.data.validation import SchemaTracker
+
+_QREL_SHORT: Final = 2  # "qid<TAB>pid"
+_QREL_TREC: Final = 4  # "qid<TAB>0<TAB>pid<TAB>relevance"
 
 
 @DATASETS.register("ms_marco")
@@ -92,9 +95,10 @@ class MSMarcoDataset(AbstractDataset):
         relevant: dict[str, list[str]] = {}
         if self._qrels is None:
             return relevant
-        for location, row in self._rows(self._qrels, "ms_marco.qrels", (2, 4)):
-            qid, pid = row[0].strip(), row[1 if len(row) == 2 else 2].strip()
-            grade = "1" if len(row) == 2 else row[3].strip()
+        for location, row in self._rows(self._qrels, "ms_marco.qrels", (_QREL_SHORT, _QREL_TREC)):
+            short = len(row) == _QREL_SHORT
+            qid, pid = row[0].strip(), row[1 if short else 2].strip()
+            grade = "1" if short else row[3].strip()
             try:
                 if int(grade) <= 0:
                     continue
@@ -113,8 +117,8 @@ class MSMarcoDataset(AbstractDataset):
             return
         relevant = self._relevant()
         skip_unjudged = self._only_judged and self._qrels is not None
-        for _, (qid, text) in self._rows(self._queries, "ms_marco.queries", (2,)):
-            qid = qid.strip()
+        for _, (raw_qid, text) in self._rows(self._queries, "ms_marco.queries", (2,)):
+            qid = raw_qid.strip()
             if skip_unjudged and qid not in relevant:
                 continue
             yield Question(

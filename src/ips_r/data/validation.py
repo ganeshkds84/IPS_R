@@ -18,6 +18,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
+from types import NoneType
 from typing import Any, Final
 
 from ips_r.config.schema import ValidationConfig
@@ -33,20 +34,21 @@ LANGUAGE_PATTERN: Final = re.compile(r"^(?:[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)$")
 URL_PATTERN: Final = re.compile(r"^[a-z][a-z0-9+.-]*://\S+$", re.IGNORECASE)
 
 
+_JSON_TYPE_NAMES: Final[tuple[tuple[Any, str], ...]] = (
+    (NoneType, "null"),
+    (bool, "bool"),  # before int: bool is a subclass of int
+    (int | float, "number"),
+    (str, "string"),
+    (list | tuple, "array"),
+    (Mapping, "object"),
+)
+
+
 def _type_name(value: Any) -> str:
     """Return a short JSON-ish type name for ``value``."""
-    if value is None:
-        return "null"
-    if isinstance(value, bool):
-        return "bool"
-    if isinstance(value, int | float):
-        return "number"
-    if isinstance(value, str):
-        return "string"
-    if isinstance(value, list | tuple):
-        return "array"
-    if isinstance(value, Mapping):
-        return "object"
+    for types, name in _JSON_TYPE_NAMES:
+        if isinstance(value, types):
+            return name
     return type(value).__name__
 
 

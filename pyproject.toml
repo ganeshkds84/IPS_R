@@ -29,6 +29,7 @@ dependencies = [
     "rich>=13.7",
     "numpy>=1.26",
     "pdfplumber>=0.11",
+    "pyarrow>=17",
 ]
 
 [project.scripts]
@@ -63,7 +64,7 @@ target-version = ["py312"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests", "scripts"]
-extend-exclude = ["outputs", "cache", "models", "data", "notebooks"]
+extend-exclude = ["./outputs", "./cache", "./models", "./data", "./notebooks"]
 
 [tool.ruff.lint]
 select = [
@@ -107,6 +108,10 @@ mypy_path = "src"
 files = ["src", "tests", "scripts"]
 show_error_codes = true
 pretty = true
+
+[[tool.mypy.overrides]]
+module = ["pyarrow", "pyarrow.*"]
+ignore_missing_imports = true
 
 # --------------------------------------------------------------------------- #
 # Testing

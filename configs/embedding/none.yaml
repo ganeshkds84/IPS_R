@@ -1,0 +1,6 @@
+# Embedding model (interfaces only in Milestone 2; no implementation is registered).
+# Implementations of ips_r.knowledge.embedding.AbstractEmbeddingModel accept:
+#   normalize: false   # L2-normalise vectors
+#   batch_size: 32     # requests per EmbeddingBatch
+name: null
+params: {}

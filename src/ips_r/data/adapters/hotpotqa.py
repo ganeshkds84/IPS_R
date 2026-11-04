@@ -15,6 +15,7 @@ Sentence offsets are kept in ``Document.extra["sentence_spans"]``.
 from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
+from functools import partial
 from pathlib import Path
 from typing import Any, ClassVar, Final
 
@@ -27,6 +28,7 @@ from ips_r.data.text import stable_hash
 from ips_r.data.validation import RecordSchema, SchemaTracker
 
 ARRAY: Final = frozenset({"array"})
+_PAIR: Final = 2  # [title, sentences] context entries and [title, index] supporting facts
 EXAMPLE = RecordSchema(
     "hotpotqa.example",
     {"_id": STR, "question": STR, "context": ARRAY},
@@ -34,11 +36,26 @@ EXAMPLE = RecordSchema(
 )
 
 
+def _question(example: Mapping[str, Any], answer: Any, facts: list[tuple[str, int]]) -> Question:
+    """Build the question of an example (raises ``ValueError`` on invalid fields)."""
+    return Question(
+        id=example["_id"],
+        text=example["question"],
+        answers=(answer,) if isinstance(answer, str) and answer else (),
+        supporting_document_ids=unique(title for title, _ in facts),
+        question_type=example.get("type"),
+        metadata={
+            "level": example.get("level"),
+            "supporting_facts": [list(f) for f in facts],
+        },
+    )
+
+
 def _paragraph(entry: Any) -> tuple[str, list[str]] | None:
     """Validate a ``[title, [sentences...]]`` context entry."""
     if (
         isinstance(entry, list | tuple)
-        and len(entry) == 2
+        and len(entry) == _PAIR
         and isinstance(entry[0], str)
         and entry[0]
         and isinstance(entry[1], list)
@@ -139,17 +156,7 @@ class HotpotQADataset(AbstractDataset):
             facts = self._supporting_facts(example, location)
             answer = example.get("answer")
             question = self._build(
-                lambda: Question(
-                    id=example["_id"],
-                    text=example["question"],
-                    answers=(answer,) if isinstance(answer, str) and answer else (),
-                    supporting_document_ids=unique(title for title, _ in facts),
-                    question_type=example.get("type"),
-                    metadata={
-                        "level": example.get("level"),
-                        "supporting_facts": [list(f) for f in facts],
-                    },
-                ),
+                partial(_question, example, answer, facts),
                 record_id=example["_id"],
                 location=location,
             )
@@ -162,7 +169,7 @@ class HotpotQADataset(AbstractDataset):
         for f_index, fact in enumerate(example.get("supporting_facts") or []):
             if (
                 isinstance(fact, list | tuple)
-                and len(fact) == 2
+                and len(fact) == _PAIR
                 and isinstance(fact[0], str)
                 and isinstance(fact[1], int)
                 and not isinstance(fact[1], bool)
